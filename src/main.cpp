@@ -6,6 +6,7 @@ void setMotorSpeed(int leftSpeed, int rightSpeed);
 void calculatePID();
 void readSensors();
 void stopMotors();
+void calculateError(double type_error);
 void readSensorsinv();
 
 
@@ -23,18 +24,18 @@ bool inversed=false;
 
 
 const int sensorPins[8] = {33,32,27,26,35,34,25,14}; 
-float Kp = 20; 
+float Kp = 25; 
 float Ki = 0; 
-float Kd = 8 ; 
-float alpha=0.85;  
+float Kd = 12;   
 int error = 0;                  
 int previousError = 0;  
 float integralTerm=0; 
 int pidOutput =0;
 // Motor Speed Parameters
-int baseSpeed =160;     // Base speed when robot is on line (0-255)
+int baseSpeed =150;     // Base speed when robot is on line (0-255)
 int maxSpeed = 255;      // Maximum allowed speed
 int minSpeed = 0;       // Minimum speed to overcome friction
+int threshold;
 // Sensor Values and Calibration
 int sensorValues[8];     // Raw sensor readings
 int sensorCalibrated[8]; // Calibrated sensor values
@@ -46,28 +47,11 @@ int sensorMax[8]={0,0,0,0,0,0,0,0};
 
 
 unsigned int t0;
-/*const unsigned int TENTDELAY=580;
-const unsigned int EXITTENT=1200;
-const unsigned int PREZIGZAG = 200;
-const unsigned int ZIGZAG=2500; //3000
-const unsigned int DEBUTCENTERO=2300;
-const unsigned int FINCENTERO=2150;
-const unsigned int DEBUTSKULL=1550;
-const unsigned int FINSKULL=2000;
-const unsigned int FACTORY = 3000;*/
-
 const double NORMALERROR = 10;
-const double TENTERROR= 7;
-const double ZIGZAGERROR = 8.5;
-const double AFTERSKULL = 5;
 
 //Line Position (0 = centered, negative = left, positive = right)
 int linePosition = 0;
-float weights[8] = {6 , 4, 2, 1, -1, -2, -4, -6};
-
-
-
-
+float weights[8] = {0 , 5, 3, 1, -1, -3, -5, 0};
 void calibrateSensors() {
   int valBlanc[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   int valNoir[8]  = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -100,37 +84,12 @@ void calibrateSensors() {
     }
   }
 }
-
-
-
-int Min(int* T) {
-  int min=T[0];
-  for(int i=0;i<8;i++){
-    if(T[i]<=min){
-      min=T[i];
-    }
-  }
-  return min;
-}
-
-
-
-int Max(int* T) {
-  int max=T[0];
-  for(int i=0;i<8;i++){
-    if(T[i]>=max){
-      max=T[i];
-    }
-  }
-  return max;
-}
-
-
 void readSensors() {
   for (int i = 0; i < 8; i++) {
     int rawValue = analogRead(sensorPins[i]);
     int calibratedValue = map(rawValue, sensorMin[i], sensorMax[i], 0, 4095);
-    sensorCalibrated[i] = (calibratedValue > (Max(sensorMin)+Min(sensorMax))/2) ? 1 : 0; 
+    threshold = (sensorMin[i] + sensorMax[i]) / 2;
+    sensorCalibrated[i] = (calibratedValue > threshold) ? 1 : 0; 
   }
 }
 
@@ -138,7 +97,8 @@ void readSensorsinv(){
     for (int i = 0; i < 8; i++) {
       int rawValue = analogRead(sensorPins[i]);
       int calibratedValue = map(rawValue, sensorMin[i], sensorMax[i], 0, 4095);
-      sensorCalibrated[i] = (calibratedValue > (Max(sensorMin)+Min(sensorMax))/2) ? 0 : 1; 
+      threshold = (sensorMin[i] + sensorMax[i]) / 2;
+      sensorCalibrated[i] = (calibratedValue > threshold) ? 0 : 1; 
     }
   }
 
@@ -165,12 +125,9 @@ void calculatePID() {
   integralTerm = constrain(integralTerm,-integral_limit,integral_limit);
 
   float derivative = error - previousError;
-  static float derivativeTerm=0 ;
-  derivativeTerm = alpha* derivative + (1-alpha)*derivativeTerm ;
-  
   previousError = error;
   
-  pidOutput = (int)(proportional + integralTerm + Kd*derivativeTerm);
+  pidOutput = (int)(proportional + integralTerm + Kd*derivative);
   
   applyPIDToMotors(pidOutput);
 }
@@ -205,8 +162,8 @@ void applyPIDToMotors(int pidOutput) {   // ----------------------updated-------
   int leftMotorSpeed = baseSpeed + pidOutput;
   int rightMotorSpeed = baseSpeed - pidOutput;
   // Constrain speeds to valid PWM range
-  leftMotorSpeed = constrain(leftMotorSpeed,(- maxSpeed/3), maxSpeed);
-  rightMotorSpeed = constrain(rightMotorSpeed,(- maxSpeed/3), maxSpeed);
+  leftMotorSpeed = constrain(leftMotorSpeed,- maxSpeed, maxSpeed);
+  rightMotorSpeed = constrain(rightMotorSpeed,- maxSpeed, maxSpeed);
   /*if (abs(error)>=5){
     if(rightMotorSpeed<leftMotorSpeed)
       rightMotorSpeed=0;
@@ -270,120 +227,17 @@ void setup() {
   pinMode(led,OUTPUT);
   pinMode(BUTTON_PIN,INPUT_PULLUP);
   // Initialize serial communication for debugging
-  Serial.begin(115200);
-  while (!Serial) {delay(10);}   
+  Serial.begin(115200);  
   for (int i = 0; i < 8; i++) {
     pinMode(sensorPins[i], INPUT);
-  }
-  // Calibrate sensors at startup
+  }// Calibrate sensors at startup
   calibrateSensors(); 
-  while(digitalRead(BUTTON_PIN)==1){
-  }
+  while(digitalRead(BUTTON_PIN)==1){}
   t0=millis();
 }
-
 void loop() {
-  readSensors(); 
+  readSensors();
   calculateError(NORMALERROR);
   calculatePID();
-  /*while( millis()-t0 <TENTDELAY){
-    baseSpeed=150;
-    float newWeights[6] = {0, 0, 1, -1,0 , 0};
-    memcpy(weights, newWeights, sizeof(weights));
-    readSensors(); 
-    calculateError(NORMALERROR);
-    calculatePID();
-    delay(10);
+  delay(5);
   }
-
-  while(millis()-t0>=TENTDELAY && millis()-t0 <(TENTDELAY+EXITTENT)){
-    baseSpeed=130;
-    float newWeights[6] =  {10, 9, 3, 0, -2, -3};
-    memcpy(weights, newWeights, sizeof(weights));
-    readSensors(); 
-    calculateError(NORMALERROR);
-    calculatePID();
-    delay(10);
-  }
-
-  while(millis()-t0 >= (TENTDELAY+EXITTENT)&& millis()-t0 < (TENTDELAY+EXITTENT+PREZIGZAG)){
-    baseSpeed=220;
-    //digitalWrite(4,HIGH);
-    float newWeights[6] = {0, 0, 2, -2,-2, -2};
-    memcpy(weights, newWeights, sizeof(weights));
-    readSensors(); 
-    calculateError(NORMALERROR);
-    calculatePID();
-    delay(10);
-  }
-
-  while(millis()-t0 >= (TENTDELAY+EXITTENT+ PREZIGZAG) && millis()-t0 < (TENTDELAY+EXITTENT+PREZIGZAG+ZIGZAG)){
-    baseSpeed=180;
-    //digitalWrite(4,HIGH);
-    float newWeights[6] = {8, 4, 2, -2, -4, -8};
-    memcpy(weights, newWeights, sizeof(weights));
-    readSensors(); 
-    calculateError(ZIGZAGERROR);
-    calculatePID();
-    delay(5);
-  }
-
-  baseSpeed=200;
-  float newWeights[6] = {5, 3, 1, -1, -3, -5};
-  memcpy(weights, newWeights, sizeof(weights));
-  readSensors(); 
-  calculateError(NORMALERROR);
-  calculatePID();
-
-  while(millis()-t0 >= (TENTDELAY+EXITTENT+PREZIGZAG+ZIGZAG+DEBUTCENTERO) && millis()-t0 < (TENTDELAY+EXITTENT+PREZIGZAG+ZIGZAG+DEBUTCENTERO+FINCENTERO)){
-    baseSpeed=130;
-    float newWeights[6] =  {10, 10, 2, 0,0,-1};
-    memcpy(weights, newWeights, sizeof(weights));
-    readSensors(); 
-    if(activeCount()>=3&&(sensorCalibrated[0]||sensorCalibrated[1])){
-      analogWrite(ML_F, 130);
-      analogWrite(ML_B, 0);
-      analogWrite(MR_F, 0);
-      analogWrite(MR_B, 130);
-      delay(100);
-    }
-    calculateError(NORMALERROR);
-    calculatePID();
-    delay(5);
-  }
-
-   while( millis()-t0 >= (TENTDELAY+EXITTENT+PREZIGZAG+ZIGZAG+DEBUTCENTERO+FINCENTERO+DEBUTSKULL)&& millis()-t0 < (TENTDELAY+EXITTENT+PREZIGZAG+ZIGZAG+DEBUTCENTERO+FINCENTERO+DEBUTSKULL+FINSKULL)){
-    baseSpeed=150;
-    float newWeights[6] =  {10, 4, 1, -0.5,0,0};
-    memcpy(weights, newWeights, sizeof(weights));
-    readSensors(); 
-    calculateError(NORMALERROR);
-    calculatePID();
-    delay(5);
-  }
-
-  while(!inversed && sensorCalibrated[0]==1 &&sensorCalibrated[1]==1 && sensorCalibrated[4]==1 && sensorCalibrated[5]==1 && (sensorCalibrated[2]==0||sensorCalibrated[3]==0)&&(millis()-t0 >= (TENTDELAY+EXITTENT+PREZIGZAG+ZIGZAG+DEBUTCENTERO+FINCENTERO+DEBUTSKULL+(FINSKULL/2)))){
-    digitalWrite(4,HIGH);
-    baseSpeed=150;
-    readSensorsinv();
-    // !(sensorCalibrated[0]==1 && sensorCalibrated[1]==1&&sensorCalibrated[4]==1&&sensorCalibrated[5]==1&&(sensorCalibrated[2]==0||sensorCalibrated[3]==0))
-    while(!(sensorCalibrated[0]==1 && sensorCalibrated[1]==1&&sensorCalibrated[4]==1&&sensorCalibrated[5]==1&&(sensorCalibrated[2]==0||sensorCalibrated[3]==0))){
-      readSensorsinv();
-      float newWeights[6] =  {9, 3, 1, -1, -3, -5};
-      memcpy(weights, newWeights, sizeof(weights)); 
-      calculateError(NORMALERROR);
-      calculatePID();
-      delay(5);
-    }
-    digitalWrite(4,LOW);
-    readSensors(); 
-    inversed=true;
-  }
-
-  if(inversed && activeCount()==6){
-    delay(100);
-    stopMotors();
-    while(1);
-  }
-  delay(5); */
-}
