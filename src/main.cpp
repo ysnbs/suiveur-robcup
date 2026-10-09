@@ -297,7 +297,7 @@ void loop() {
     delay(500);
   }*/
   t0=millis();
-  while(millis()-t0<500){ // wsal I lawla
+  /*while(millis()-t0<500){ // wsal I lawla
     readSensors();
     calculateError(NORMALERROR);
     baseSpeed = 220;
@@ -339,8 +339,6 @@ void loop() {
   }
   resetWeights();
   while(1){ // till the I
-    /*weights[0] = 0;
-    weights[7] = 0;*/
     readSensors();
     calculateError(8);
     baseSpeed = 160;
@@ -393,7 +391,7 @@ void loop() {
   while(millis()-t0<350){
     setMotorSpeed(220,40);
     delay(5);
-  }
+  }*/
   resetWeights();
   while(1){ // till the end of the ||
     readSensors();
@@ -402,6 +400,15 @@ void loop() {
     calculatePID(35, 0, 15);
     delay(5);
     if(sensorCalibrated[0] && sensorCalibrated[1] && sensorCalibrated[2] && (!sensorCalibrated[3] || !sensorCalibrated[4]) && sensorCalibrated[5] && sensorCalibrated[6] && sensorCalibrated[7]) break;
+  }
+  t0=millis();
+  while(1){//till the end of inverse 
+    readSensorsinv();
+    calculateError(NORMALERROR);
+    baseSpeed=150;
+    calculatePID(55, 0, 15);
+    delay(5);
+    if(millis()-t0>=2000)break;
   }
   while(digitalRead(BUTTON_PIN)==1){
     stopMotors();
