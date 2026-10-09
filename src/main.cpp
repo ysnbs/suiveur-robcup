@@ -433,9 +433,30 @@ void loop() {
     //if((activeCount()<=2))break;
     //if(!sensorCalibrated[0] && millis()-t0>1000)break;
     if(sensorCalibrated[0] && millis()-t0>800){
-    digitalWrite(led,HIGH);
-    break;}
+      digitalWrite(led,HIGH);
+      break;
+    }
   }
+  t0=millis();
+  while(millis()-t0<85){
+    setMotorSpeed(160,20);
+  }
+  resetWeights();
+  while(1){ //yousel lel finish morab3
+    readSensors();
+    calculateError(NORMALERROR);
+    baseSpeed = 180;
+    calculatePID(45, 0, 15);
+    delay(5);
+    if(activeCount()==8) break;
+  }
+  t0=millis();
+  while(1){
+    setMotorSpeed(180,180);
+    delay(5);
+    if(millis()-t0>129)break;
+  }
+
   while(digitalRead(BUTTON_PIN)==1){
     stopMotors();
     delay(5); // test
