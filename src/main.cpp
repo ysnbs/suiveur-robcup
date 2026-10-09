@@ -176,8 +176,8 @@ void applyPIDToMotors(int pidOutput) {   // ----------------------updated-------
     rightMotorSpeed = rightMotorSpeed*maxSpeed/leftMotorSpeed;
   }
   // Constrain speeds to valid PWM range
-  leftMotorSpeed = constrain(leftMotorSpeed,- maxSpeed, maxSpeed);
-  rightMotorSpeed = constrain(rightMotorSpeed,- maxSpeed, maxSpeed);
+  leftMotorSpeed = constrain(leftMotorSpeed,- maxSpeed*0.75, maxSpeed);
+  rightMotorSpeed = constrain(rightMotorSpeed,- maxSpeed*0.75, maxSpeed);
   /*if (abs(error)>=5){
     if(rightMotorSpeed<leftMotorSpeed)
       rightMotorSpeed=0;
@@ -339,14 +339,17 @@ void loop() {
   }
   resetWeights();
   while(1){ // till the I
+    /*weights[0] = 0;
+    weights[7] = 0;*/
     readSensors();
-    calculateError(NORMALERROR);
-    baseSpeed = 165;
-    calculatePID(60, 0, 15);
+    calculateError(8);
+    baseSpeed = 160;
+    calculatePID(60, 0, 12);
     delay(5);
     if(activeCount()>=6&&sensorCalibrated[7]) break;
   }
-  t0 = millis();
+  resetWeights();
+  /*t0 = millis();
   while(1){ // till the turn
     readSensors();
     calculateError(NORMALERROR);
@@ -356,11 +359,11 @@ void loop() {
     if(countLeft()>=3 && millis()-t0>100) break;
   }
   t0 = millis();
-  while(millis()-t0<350){
-    setMotorSpeed(-25,220);
+  while(millis()-t0<450){
+    setMotorSpeed(-50,220);
     delay(5);
   }//should be around teardrop rn
-  t0 = millis();
+  /*t0 = millis();
   while(1){ // till end of the teardrop
     weights[0] = 27;
     weights[1] = 21;
@@ -377,7 +380,7 @@ void loop() {
   while(millis()-t0<350){
     setMotorSpeed(220,40);
     delay(5);
-  }
+  }*/
   resetWeights();
   while(digitalRead(BUTTON_PIN)==1){
     stopMotors();
