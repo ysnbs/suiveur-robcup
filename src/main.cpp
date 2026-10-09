@@ -351,6 +351,7 @@ void loop() {
   resetWeights();
   t0 = millis();
   while(1){ // till the turn
+    digitalWrite(led,LOW);
     readSensors();
     calculateError(NORMALERROR);
     baseSpeed = 170;
@@ -359,30 +360,29 @@ void loop() {
     if(countLeft()>=3 && millis()-t0>100) break;
   }
   t0 = millis();
-  while(millis()-t0<350){
-    setMotorSpeed(-80,220);
+  while(millis()-t0<315){
+    digitalWrite(led,HIGH);
+    setMotorSpeed(-100,220);
     delay(5);
   }//should be around teardrop rn
+  errloop[0] =-1;
+  errloop[1] =-1;
+  errloop[2] =-1;
+  errloop[3] =-1;
+  errloop[4] =-1;
+  
   t0 = millis();
-  while(millis()-t0<500){
-    setMotorSpeed(200,200);
-    delay(5);
-  }
   while(1){ // till end of the teardrop
-    weights[0] =-3;
-    weights[1] =-5;
-    weights[2] = 0;
-    weights[3] = 0;
-    weights[4] = 0;
-    weights[5] = 0;
-    weights[6] = 5;
-    weights[7] = 3;
+    digitalWrite(led,LOW);
+    weights[0] =21;
+    weights[1] =15;
+    weights[2] =9;
     readSensors();
-    calculateError(NORMALERROR);
-    baseSpeed = 200;
+    calculateError(4);
+    baseSpeed = 180;
     calculatePID(45, 0, 10);
-    delay(5);
-    if(activeCount()>=5&&millis()-t0>850) break;
+    delay(1);
+    if(activeCount()>=5 && millis()-t0>850) break;
   }
   /*t0 = millis();
   while(millis()-t0<350){
