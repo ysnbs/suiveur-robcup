@@ -386,15 +386,23 @@ void loop() {
     calculateError(4);
     baseSpeed = 180;
     calculatePID(45, 0, 10);
-    delay(1);
-    if(activeCount()>=5 && millis()-t0>850) break;
+    delay(2);
+    if(activeCount()>=5 && countRight()>=2 && millis()-t0>850) break;
   }
-  /*t0 = millis();
+  t0 = millis();
   while(millis()-t0<350){
     setMotorSpeed(220,40);
     delay(5);
-  }*/
+  }
   resetWeights();
+  while(1){ // till the end of the ||
+    readSensors();
+    calculateError(NORMALERROR);
+    baseSpeed = 180;
+    calculatePID(35, 0, 15);
+    delay(5);
+    if(sensorCalibrated[0] && sensorCalibrated[1] && sensorCalibrated[2] && (!sensorCalibrated[3] || !sensorCalibrated[4]) && sensorCalibrated[5] && sensorCalibrated[6] && sensorCalibrated[7]) break;
+  }
   while(digitalRead(BUTTON_PIN)==1){
     stopMotors();
     delay(5); // test
