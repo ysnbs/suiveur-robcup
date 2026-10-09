@@ -404,11 +404,37 @@ void loop() {
   t0=millis();
   while(1){//till the end of inverse 
     readSensorsinv();
+    weights[5] =-9;
+    weights[6] =-15;
+    weights[7] =-21;
     calculateError(NORMALERROR);
-    baseSpeed=150;
+    baseSpeed=180;
     calculatePID(55, 0, 15);
     delay(5);
-    if(millis()-t0>=2000)break;
+    if(millis()-t0>500&&activeCount()<2)break;
+  }
+  resetWeights();
+  t0=millis();
+  while(millis()-t0<100){
+    setMotorSpeed(180,180);
+    delay(5);
+
+  }
+  t0=millis();
+  while(1){//till the end of inverse 
+    readSensorsinv();
+    weights[2] = 12;
+    weights[1] = 20;
+    weights[0] = 28;
+    calculateError(NORMALERROR);
+    baseSpeed=180;
+    calculatePID(55, 0, 15);
+    delay(5);
+    //if((activeCount()<=2))break;
+    //if(!sensorCalibrated[0] && millis()-t0>1000)break;
+    if(sensorCalibrated[0] && millis()-t0>800){
+    digitalWrite(led,HIGH);
+    break;}
   }
   while(digitalRead(BUTTON_PIN)==1){
     stopMotors();
