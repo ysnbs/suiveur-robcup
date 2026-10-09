@@ -374,9 +374,14 @@ void loop() {
   t0 = millis();
   while(1){ // till end of the teardrop
     digitalWrite(led,LOW);
-    weights[0] =21;
-    weights[1] =15;
-    weights[2] =9;
+    weights[0] =28;
+    weights[1] =20;
+    weights[2] =12;
+    weights[3] =4;
+    weights[4] =-4;
+    weights[5] =-6;
+    weights[6] =-8;
+    weights[7] =-10;
     readSensors();
     calculateError(4);
     baseSpeed = 180;
