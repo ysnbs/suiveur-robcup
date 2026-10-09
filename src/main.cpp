@@ -18,7 +18,7 @@ const float integral_limit=200;
 const int led=2;
 const int BUTTON_PIN=13;
 bool started = false;
-bool excuted =false;
+bool excuted =false; 
 bool inversed=false;
 
 
@@ -44,6 +44,8 @@ int valnoir[8];        // Maximum values during calibration
 int sensorMin[8]={4095,4095,4095,4095,4095,4095,4095,4095};
 int sensorMax[8]={0,0,0,0,0,0,0,0};
 
+float errloop[5]={0,0,0,0,0};
+int errloopi = 0;
 
 
 unsigned int t0;
@@ -51,7 +53,7 @@ const double NORMALERROR = 10;
 
 //Line Position (0 = centered, negative = left, positive = right)
 int linePosition = 0;
-float weights[8] = {0 , 5, 3, 1, -1, -3, -5, 0};
+float weights[8] = {7 , 5, 3, 1, -1, -3, -5, -7};
 void calibrateSensors() {
   int valBlanc[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   int valNoir[8]  = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -111,15 +113,21 @@ void calculateError(double type_error) {
     sensorSum += sensorCalibrated[i];
   }
   if (sensorSum != 0) {
-    error = weightedSum;
+    error = weightedSum/sensorSum;
+    errloopi = (errloopi+1)%5;
+    errloop[errloopi] = error;
     linePosition = weightedSum;
   } else {
-    error = (previousError > 0) ? type_error : -type_error; 
+    float errsum = 0;
+    for(int i=0;i<5;i++){
+      errsum += errloop[i];
+    }
+    error = (errsum > 0) ? type_error : -type_error;
   }
 }   
 
 
-void calculatePID() {
+void calculatePID(float Kp, float Ki, float Kd) {
   float proportional = Kp * error;
   integralTerm += Ki * error;
   integralTerm = constrain(integralTerm,-integral_limit,integral_limit);
@@ -161,6 +169,12 @@ void applyPIDToMotors(int pidOutput) {   // ----------------------updated-------
 
   int leftMotorSpeed = baseSpeed + pidOutput;
   int rightMotorSpeed = baseSpeed - pidOutput;
+  if(rightMotorSpeed > 255){
+    leftMotorSpeed = leftMotorSpeed*maxSpeed/rightMotorSpeed;
+  }
+  if(leftMotorSpeed > 255){
+    rightMotorSpeed = rightMotorSpeed*maxSpeed/leftMotorSpeed;
+  }
   // Constrain speeds to valid PWM range
   leftMotorSpeed = constrain(leftMotorSpeed,- maxSpeed, maxSpeed);
   rightMotorSpeed = constrain(rightMotorSpeed,- maxSpeed, maxSpeed);
@@ -218,6 +232,9 @@ void testSensors() {
 
     Serial.println();
 }
+void testsensors2(){
+  baseSpeed=activeCount()*30;
+}
 void setup() {
   // Initialize motor pins as OUTPUT
   pinMode(ML_F, OUTPUT);
@@ -235,9 +252,135 @@ void setup() {
   while(digitalRead(BUTTON_PIN)==1){}
   t0=millis();
 }
-void loop() {
-  readSensors();
-  calculateError(NORMALERROR);
-  calculatePID();
-  delay(5);
+
+int countRight(){
+  int count = 0;
+  for (int i = 0; i < 4; i++) {
+    if (sensorCalibrated[i] == 1) {
+      count++;
+    }
   }
+  return count;
+}
+
+int countLeft(){
+  int count = 0;
+  for (int i = 4; i < 8; i++) {
+    if (sensorCalibrated[i] == 1) {
+      count++;
+    }
+  }
+  return count;
+}
+void resetWeights(){
+  weights[0] = 7;
+  weights[1] = 5;
+  weights[2] = 3;
+  weights[3] = 1;
+  weights[4] = -1;
+  weights[5] = -3;
+  weights[6] = -5;
+  weights[7] = -7;
+}
+void loop() {
+  /*while(1){//serial print the sensors
+    readSensors();
+    Serial.print("Sensors: ");
+    for (int i = 0; i < 8; i++) {
+        Serial.print(sensorCalibrated[i]);
+        if (i < 7) {
+            Serial.print(" | ");
+        }
+    }
+    Serial.println();
+    testSensors();
+    delay(500);
+  }*/
+  t0=millis();
+  while(millis()-t0<500){ // wsal I lawla
+    readSensors();
+    calculateError(NORMALERROR);
+    baseSpeed = 220;
+    calculatePID(30, 0, 10);
+    delay(5); // test
+  }
+  while(activeCount()>=5){ // lazem ifoot el I lawla
+    readSensors();
+    calculateError(NORMALERROR);
+    baseSpeed = 80;
+    calculatePID(30, 0, 10);
+    delay(5); // test
+  }
+  while(1){
+    readSensors();
+    calculateError(NORMALERROR);
+    baseSpeed = 100;
+    calculatePID(30, 0, 10);
+    delay(5); // test
+    if(activeCount()>=4) break;
+  }
+  t0=millis();
+  while(millis()-t0<400){ // 1000
+    setMotorSpeed(20,240);
+    delay(5); // test
+  }
+  t0 = millis();
+  while(millis()-t0<250){ // out of the circle
+    digitalWrite(led,HIGH);
+    //weights[8] = {7 , 5, 3, 1, -1, -3, -5, -7};
+    weights[5] =-9;
+    weights[6] =-15;
+    weights[7] =-21;
+    readSensors();
+    calculateError(NORMALERROR);
+    baseSpeed = 180;
+    calculatePID(30, 0, 10);
+    delay(5);
+  }
+  resetWeights();
+  while(1){ // till the I
+    readSensors();
+    calculateError(NORMALERROR);
+    baseSpeed = 165;
+    calculatePID(60, 0, 15);
+    delay(5);
+    if(activeCount()>=6&&sensorCalibrated[7]) break;
+  }
+  t0 = millis();
+  while(1){ // till the turn
+    readSensors();
+    calculateError(NORMALERROR);
+    baseSpeed = 170;
+    calculatePID(45, 0, 10);
+    delay(5);
+    if(countLeft()>=3 && millis()-t0>100) break;
+  }
+  t0 = millis();
+  while(millis()-t0<350){
+    setMotorSpeed(-25,220);
+    delay(5);
+  }//should be around teardrop rn
+  t0 = millis();
+  while(1){ // till end of the teardrop
+    weights[0] = 27;
+    weights[1] = 21;
+    weights[2] = 15;
+    weights[3] = 9;
+    readSensors();
+    calculateError(NORMALERROR);
+    baseSpeed = 200;
+    calculatePID(45, 0, 10);
+    delay(5);
+    if(activeCount()>=5&&millis()-t0>850) break;
+  }
+  t0 = millis();
+  while(millis()-t0<350){
+    setMotorSpeed(220,40);
+    delay(5);
+  }
+  resetWeights();
+  while(digitalRead(BUTTON_PIN)==1){
+    stopMotors();
+    delay(5); // test
+  }
+}
