@@ -297,7 +297,7 @@ void loop() {
     delay(500);
   }*/
   t0=millis();
-  /*while(millis()-t0<500){ // wsal I lawla
+  while(millis()-t0<500){ // wsal I lawla
     readSensors();
     calculateError(NORMALERROR);
     baseSpeed = 220;
@@ -391,7 +391,7 @@ void loop() {
   while(millis()-t0<350){
     setMotorSpeed(220,40);
     delay(5);
-  }*/
+  }
   resetWeights();
   while(1){ // till the end of the ||
     readSensors();
