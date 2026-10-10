@@ -416,7 +416,7 @@ void loop() {
     if(sensorCalibrated[0] && sensorCalibrated[1] && sensorCalibrated[2] && (!sensorCalibrated[3] || !sensorCalibrated[4]) && sensorCalibrated[5] && sensorCalibrated[6] && sensorCalibrated[7]) break;
   }
   t0=millis();
-  while(1){//till the end of inverse 
+  while(1){//till middle of inverse 
     readSensorsinv();
     weights[5] =-9;
     weights[6] =-15;
