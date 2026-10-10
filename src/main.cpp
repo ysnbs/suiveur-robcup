@@ -297,14 +297,14 @@ void loop() {
     delay(500);
   }*/
   t0=millis();
-  while(millis()-t0<500){ // wsal I lawla
+  while(millis()-t0<500){ // wsal I lawla TODO: speedup?
     readSensors();
     calculateError(NORMALERROR);
     baseSpeed = 220;
     calculatePID(30, 0, 10);
     delay(5); // test
   }
-  while(activeCount()>=5){ // lazem ifoot el I lawla
+  while(activeCount()>=5){ // lazem ifoot el I lawla TODO: speedup?
     readSensors();
     calculateError(NORMALERROR);
     baseSpeed = 80;
@@ -333,7 +333,7 @@ void loop() {
   errloop[3] =-1;
   errloop[4] =-1;
   t0 = millis();
-  while(millis()-t0<250){ // out of the circle
+  while(millis()-t0<250){ // out of the circle TODO: stress test first circle harder TODO: speedup?
     digitalWrite(led,HIGH);
     //weights[8] = {7 , 5, 3, 1, -1, -3, -5, -7};
     weights[5] =-9;
@@ -366,7 +366,7 @@ void loop() {
     if(countLeft()>=3 && millis()-t0>100) break;
   }
   t0 = millis();
-  while(millis()-t0<315){
+  while(millis()-t0<315){ // force turn after 2nd I
     digitalWrite(led,HIGH);
     setMotorSpeed(-100,220);
     delay(5);
@@ -378,7 +378,7 @@ void loop() {
   errloop[4] =-1;
   
   t0 = millis();
-  while(1){ // till end of the teardrop
+  while(1){ // till end of the teardrop TODO: speedup?
     digitalWrite(led,LOW);
     weights[0] =28;
     weights[1] =20;
@@ -396,7 +396,7 @@ void loop() {
     if(activeCount()>=4 && countRight()>=2 && millis()-t0>850) break;
   }
   t0 = millis();
-  while(millis()-t0<350){
+  while(millis()-t0<350){ // TODO: amal fi 9assa
     setMotorSpeed(220,-20);
     delay(5);
   }
@@ -407,7 +407,7 @@ void loop() {
   errloop[4] =-1;
 
   resetWeights();
-  while(1){ // till the end of the ||
+  while(1){ // till the end of the || TODO: stress test clean enter TODO: speedup?
     readSensors();
     calculateError(NORMALERROR);
     baseSpeed = 180;
@@ -416,7 +416,7 @@ void loop() {
     if(sensorCalibrated[0] && sensorCalibrated[1] && sensorCalibrated[2] && (!sensorCalibrated[3] || !sensorCalibrated[4]) && sensorCalibrated[5] && sensorCalibrated[6] && sensorCalibrated[7]) break;
   }
   t0=millis();
-  while(1){//till middle of inverse 
+  while(1){//till middle of inverse
     readSensorsinv();
     weights[5] =-9;
     weights[6] =-15;
@@ -435,7 +435,7 @@ void loop() {
 
   }
   t0=millis();
-  while(1){//till the end of inverse 
+  while(1){//till the end of inverse TODO: speedup?
     readSensorsinv();
     weights[2] = 12;
     weights[1] = 20;
@@ -469,8 +469,9 @@ void loop() {
     setMotorSpeed(180,180);
     delay(5);
     if(millis()-t0>129)break;
-  }
+  }// TODO: wiini el celebration??!!
   while(digitalRead(BUTTON_PIN)==1){
     stopMotors();
     delay(5); // test
-}}
+  }
+}
