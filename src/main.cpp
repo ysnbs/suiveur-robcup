@@ -311,19 +311,27 @@ void loop() {
     calculatePID(30, 0, 10);
     delay(5); // test
   }
+  t0=millis();
   while(1){
     readSensors();
     calculateError(NORMALERROR);
-    baseSpeed = 100;
+    baseSpeed = 140;
     calculatePID(30, 0, 10);
     delay(5); // test
-    if(activeCount()>=4) break;
+    if(activeCount()>=4 && millis()-t0>140) break;
   }
   t0=millis();
-  while(millis()-t0<400){ // 1000
-    setMotorSpeed(20,240);
+  while(millis()-t0<400){ 
+    digitalWrite(led,HIGH);
+    // 1000
+    setMotorSpeed(20,220);
     delay(5); // test
   }
+  errloop[0] =-1;
+  errloop[1] =-1;
+  errloop[2] =-1;
+  errloop[3] =-1;
+  errloop[4] =-1;
   t0 = millis();
   while(millis()-t0<250){ // out of the circle
     digitalWrite(led,HIGH);
@@ -385,13 +393,19 @@ void loop() {
     baseSpeed = 180;
     calculatePID(45, 0, 10);
     delay(2);
-    if(activeCount()>=5 && countRight()>=2 && millis()-t0>850) break;
+    if(activeCount()>=4 && countRight()>=2 && millis()-t0>850) break;
   }
   t0 = millis();
   while(millis()-t0<350){
-    setMotorSpeed(220,40);
+    setMotorSpeed(220,-20);
     delay(5);
   }
+  errloop[0] =-1;
+  errloop[1] =-1;
+  errloop[2] =-1;
+  errloop[3] =-1;
+  errloop[4] =-1;
+
   resetWeights();
   while(1){ // till the end of the ||
     readSensors();
@@ -456,9 +470,7 @@ void loop() {
     delay(5);
     if(millis()-t0>129)break;
   }
-
   while(digitalRead(BUTTON_PIN)==1){
     stopMotors();
     delay(5); // test
-  }
-}
+}}
